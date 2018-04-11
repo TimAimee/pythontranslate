@@ -29,9 +29,9 @@ class Translate(object):
     PT = "葡萄牙语"
 
     def get_datetime(self):
-        """
-        获得当前时间时间戳
-        :return: 时间\n
+        """获得当前格式化的时间戳
+
+        :return: 当前格式化的时间戳
         """
         now = int(time.time())
         timeStruct = time.localtime(now)
@@ -39,24 +39,45 @@ class Translate(object):
         return strTime
 
     def _set_filexmlname(self):
+        """设置xml保存时的文件名
+
+        :return: xml文件名
+        """
         return None
 
     def _get_translate_str(self, array):
+        """根据二维数组得到翻译的结果"""
         return None
 
     def _change_content(self, cell_value_content, language_title_str):
+        """针对国家语言来替换存在引号的翻译内容
+
+        :param cell_value_content: 翻译内容
+        :param language_title_str:  国家语言
+        :return:
+        """
         if (language_title_str == self.EN or language_title_str == self.FR or language_title_str == self.IT) \
                 and self._is_contain_diagonal(cell_value_content):
             cell_value_content = self._replace_diagonal(cell_value_content)
         return cell_value_content
 
     def _replace_diagonal(self, str):
+        """替换存在引号的翻译内容 ,将翻译内容中存在 \'、'、’的字符统一转换成 \'
+
+        :param str: 目标字符串
+        :return:  替换后的字符串
+        """
         str = str.replace("\'", "\\'")
         str = str.replace("’", "\\'")
         str = str.replace("\\\\", "\\")
         return str
 
     def _is_contain_diagonal(self, str):
+        """判断目标字符串是否包含引号
+
+        :param str: 目标字符串
+        :return: 'True'表示存在，'False'表示不存在
+        """
         flag = False
         if "\'" in str:
             flag = True
@@ -65,17 +86,31 @@ class Translate(object):
         return flag
 
     def do_translate(self, array2):
+        """提供一个二维数组进行翻译
+
+        :param array2: 二维数组
+        """
         list_transtlate_dic = self._get_translate_str(array2);
         filename = self._set_filexmlname();
         self.__save_file(filename, list_transtlate_dic)
 
     def __save_file(self, filename, list_transtlate_dic):
+        """保存翻译的内容到相应的文件上
+
+        :param filename: 文件名
+        :param list_transtlate_dic:字典列表的翻译结果
+        :return:
+        """
         if list_transtlate_dic == None or len(list_transtlate_dic) == 0: return
         for transtlate_dic in list_transtlate_dic:
             print "***"
-            self._save_xml_by_language(filename, transtlate_dic["result"], transtlate_dic["language"])
+            self.__save_xml_by_language(filename, transtlate_dic["result"], transtlate_dic["language"])
 
     def execl_to_2array(self):
+        """ 打开指定文件路径的excel,并读取excel的行列数据，生成一个二维数组
+
+        :return: 二维数组
+        """
         worksheet = self.__open_execl_file(self.path_excel)
         if worksheet == None:
             print "worksheet出现错误"
@@ -102,6 +137,11 @@ class Translate(object):
         return arrListOut;
 
     def __open_execl_file(self, path_excel):
+        """打开相应文件路径的excel
+
+        :param path_excel: 文件路径
+        :return: workbook对象
+        """
         try:
             workbook = load_workbook(path_excel, True)
             worksheet = workbook.worksheets[0]
@@ -110,7 +150,12 @@ class Translate(object):
             return None
         return worksheet
 
-    def _get_dir_name(self, language):
+    def __get_dir_name(self, language):
+        """根据国家语言返回对应的文件夹名字，如果"意大利语"->"values-it"
+
+        :param language: 国家语言
+        :return: 文件夹名字
+        """
         if language == self.ZH:
             return "values-zh"
         elif language == self.ZH_HK:
@@ -142,7 +187,13 @@ class Translate(object):
         else:
             return "values"
 
-    def _save_xml_by_language(self, filename, result, language_title_str):
+    def __save_xml_by_language(self, filename, result, language_title_str):
+        """根据国家语言来选择保存的不同情况，其中英语以及繁体要保存两次
+
+        :param filename: 文件名,如"string.xml"
+        :param result: 列表类型，翻译的结果
+        :param language_title_str: 国家语言
+        """
         if language_title_str == self.ZH_M:
             self.__save_to_file(filename, result, self.ZH_HK)
             self.__save_to_file(filename, result, self.ZH_TW)
@@ -153,7 +204,13 @@ class Translate(object):
             self.__save_to_file(filename, result, language_title_str)
 
     def __save_to_file(self, filename, result, language_title_str):
-        dir_language = self._get_dir_name(language_title_str)
+        """保存内容到文件
+
+        :param filename: 文件名,如"string.xml"
+        :param result: 列表类型，翻译的结果
+        :param language_title_str: 国家语言
+        """
+        dir_language = self.__get_dir_name(language_title_str)
         # print "保存到文件"
         """
          保存到文件
@@ -188,11 +245,19 @@ class Translate(object):
                 print  "写入出错=", item_str,
         fileObject.close()
 
-
+"""
+用于翻译普通string的类
+"""
 class TranslateStr(Translate):
     __xml_name_str = 'string.xml'
 
     def _get_translate_str(self, array):
+        """根据二维数组得到翻译的结果
+
+            :param array: 二维数组
+            :return : 字典列表,[ {"language": language_title_str, "result": result_arr}, {"language": language_title_str, "result": result_arr}]
+            ，其中result_arr就是由对应的翻译结果的得到的xml数组，后期保存的xml数据使用的就是它
+        """
         array_key_count = len(array)
         array_language = array[0]
         language_count = len(array_language)
@@ -208,7 +273,7 @@ class TranslateStr(Translate):
                 if index_key == 1:
                     result_arr.append("<?xml version=\"1.0\" encoding=\"uft-8\"?>\n" + "<resources>")
                 # print   "key=", cell_value_key, ",value=", cell_value_content
-                result = self.get_result(cell_value_content, cell_value_key, language_title_str)
+                result = self.__get_result(cell_value_content, cell_value_key, language_title_str)
                 if result != None:
                     result_arr.append(result);
                 if index_key == array_key_count - 1:
@@ -220,7 +285,14 @@ class TranslateStr(Translate):
         print "--------------------"
         return list_transtlate_dic
 
-    def get_result(self, cell_value_content, cell_value_key, language_title_str):
+    def __get_result(self, cell_value_content, cell_value_key, language_title_str):
+        """根据翻译key内容，翻译content内容，国家语言，返回相应Android格式的字符串结果
+
+        :param cell_value_content: 翻译content内容
+        :param cell_value_key: 翻译key内容
+        :param language_title_str: 国家语言
+        :return: Android格式的字符串结果
+        """
         if cell_value_key == None or "None" in cell_value_key or cell_value_key.startswith("ya"):
             return None
         else:
@@ -234,23 +306,44 @@ class TranslateStr(Translate):
             return value
 
     def _set_filexmlname(self):
+        """设置xml保存时的文件名
+
+        :return: xml文件名
+        """
         return self.__xml_name_str
 
-    def __get_str_by_key_value(self, key, value):
-        stringbuffer = "<string name=\"" + key;
-        if key == "tip":
-            stringbuffer = stringbuffer + "\" formatted=\"false\">"
-        else:
-            stringbuffer = stringbuffer + "\">"
-        stringbuffer = stringbuffer + value
-        stringbuffer = stringbuffer + "</string>"
-        return stringbuffer
+    def __get_str_by_key_value(self, cell_value_key, cell_value_content):
+        """返回根据content，返回Android格式的内容,
+             如'key，content'-->'<string name="key">content</string>'
 
+             :param key: 翻译key内容
+             :param value: 翻译value内容
+             :return: Android格式的内容
+             """
+        value = "\t<string name=\"" + cell_value_key;
+        if cell_value_key == "tip":
+            value = value + "\" formatted=\"false\">"
+        else:
+            value = value + "\">"
+        value = value + cell_value_content
+        value = value + "</string>"
+        return value
+
+
+"""
+用于翻译ios的类
+"""
 
 class TranslateIOS(Translate):
     __xml_name_str = 'string_ios.xml'
 
     def _get_translate_str(self, array):
+        """根据二维数组得到翻译的结果
+
+        :param array: 二维数组
+        :return : 字典列表,[ {"language": language_title_str, "result": result_arr}, {"language": language_title_str, "result": result_arr}]
+        ，其中result_arr就是由对应的翻译结果的得到的xml数组，后期保存的xml数据使用的就是它
+        """
         array_key_count = len(array)
         array_language = array[0]
         language_count = len(array_language)
@@ -264,7 +357,7 @@ class TranslateIOS(Translate):
                 cell_value_key = array[index_key][0]
                 cell_value_content = array[index_key][index_language]
                 # print   "key=", cell_value_key, ",value=", cell_value_content
-                result = self.get_result(cell_value_content, cell_value_key, language_title_str)
+                result = self.__get_result(cell_value_content, cell_value_key, language_title_str)
                 if result != None:
                     result_arr.append(result);
                 if index_key == array_key_count - 1:
@@ -275,7 +368,14 @@ class TranslateIOS(Translate):
         print "--------------------"
         return list_transtlate_dic
 
-    def get_result(self, cell_value_content, cell_value_key, language_title_str):
+    def __get_result(self, cell_value_content, cell_value_key, language_title_str):
+        """根据翻译key内容，翻译content内容，国家语言，返回相应Android格式的字符串结果
+
+        :param cell_value_content: 翻译content内容
+        :param cell_value_key: 翻译key内容
+        :param language_title_str: 国家语言
+        :return: Android格式的字符串结果
+        """
         if cell_value_key == None or "None" in cell_value_key or cell_value_key.startswith("ya"):
             return None
         else:
@@ -289,17 +389,39 @@ class TranslateIOS(Translate):
             return value
 
     def _set_filexmlname(self):
+        """设置xml保存时的文件名
+
+        :return: xml文件名
+        """
         return self.__xml_name_str
 
-    def __get_str_by_key_value(self, key, content):
-        value = "\"" + key + "\" = " + "\"" + content + "\""
+    def __get_str_by_key_value(self, cell_value_key, cell_value_content):
+        """返回根据content，返回Android格式的内容,
+        如'key，content'-->'"key" = "content"'
+
+        :param key: 翻译key内容
+        :param content: 翻译content内容
+        :return: Android格式的内容
+        """
+        value = "\"" + cell_value_key + "\" = " + "\"" + cell_value_content + "\""
         return value
+
+
+"""
+用于翻译Android中string-array的类
+"""
 
 
 class TranslateArr(Translate):
     xml_name_array = 'arrays_glossary.xml'
 
     def _get_translate_str(self, array):
+        """根据二维数组得到翻译的结果
+
+        :param array: 二维数组
+        :return : 字典列表,[ {"language": language_title_str, "result": result_arr}, {"language": language_title_str, "result": result_arr}]
+        ，其中result_arr就是由对应的翻译结果的得到的xml数组，后期保存的xml数据使用的就是它
+        """
         array_key_count = len(array)
         array_language = array[0]
         language_count = len(array_language)
@@ -315,7 +437,7 @@ class TranslateArr(Translate):
                 if index_key == 1:
                     result_arr.append("<?xml version=\"1.0\" encoding=\"uft-8\"?>\n" + "<resources>")
                 # print   "key=", cell_value_key, ",value=", cell_value_content
-                result = self.__get_result(cell_value_content, cell_value_key, language_title_str, result_arr)
+                result = self.__get_result(cell_value_content, cell_value_key, language_title_str)
                 if result != None:
                     result_arr.append(result)
                 if index_key == array_key_count - 1:
@@ -327,30 +449,49 @@ class TranslateArr(Translate):
         print "--------------------"
         return list_transtlate_dic
 
-    def __get_result(self, cell_value_content, cell_value_key, language_title_str, result_arr):
+    def __get_result(self, cell_value_content, cell_value_key, language_title_str):
+        """根据翻译key内容，翻译content内容，国家语言，返回相应Android格式的字符串结果
+
+        :param cell_value_key: 翻译key内容
+        :param cell_value_content: 翻译content内容
+        :param language_title_str: 国家语言
+        :return: Android格式的字符串结果
+        """
         if cell_value_key == None or "None" in cell_value_key or not cell_value_key.startswith("ya"):
             return None
         if cell_value_content == None:
             print   "cell_value_content None=", cell_value_key,
         cell_value_content = self._change_content(cell_value_content, language_title_str)
         if self.__is_array(cell_value_key):
-            result = self.__get_result_array(cell_value_key, cell_value_content, language_title_str)
+            result = self.__get_result_array(cell_value_key, cell_value_content)
         else:
-            result = self.__get_result_single(cell_value_key, cell_value_content, language_title_str)
+            result = self.__get_result_single(cell_value_key, cell_value_content)
         return result
 
-    def __get_result_array(self, cell_value_key, cell_value_content, language_title_str):
+    def __get_result_array(self, cell_value_key, cell_value_content):
+        """根据翻译key内容，翻译content内容，国家语言，返回相应Android格式的内容
+
+        :param cell_value_key: 翻译key内容
+        :param cell_value_content: 翻译content内容
+        :return: Android格式的内容
+        """
         cell_value_key_really = self.__get_head_key_array(cell_value_key)
         item_str = self.__get_item_str(cell_value_content)
-        if self.__is_start(cell_value_key):
-            value = "<string-array name= \"" + cell_value_key_really + "\">\n" + item_str
-        elif self.__is_middle(cell_value_key):
+        if self.__is_exits_start(cell_value_key):
+            value = "\t<string-array name= \"" + cell_value_key_really + "\">\n" + item_str
+        elif self.__is_exits_middle(cell_value_key):
             value = item_str
-        elif self.__is_stop(cell_value_key):
-            value = item_str + "\n</string-array>"
+        elif self.__is_exits_stop(cell_value_key):
+            value = item_str + "\n\t</string-array>"
         return value
 
-    def __get_result_single(self, cell_value_key, cell_value_content, language_title_str):
+    def __get_result_single(self, cell_value_key, cell_value_content):
+        """根据翻译key内容，翻译content内容，返回相应Android格式的内容
+
+        :param cell_value_key: 翻译key内容
+        :param cell_value_content: 翻译content内容
+        :return: Android格式的内容
+        """
         cell_value_key_really = self.__get_head_key_item(cell_value_key)
         try:
             value = self.__get_str_by_key_value(cell_value_key_really, cell_value_content)
@@ -358,20 +499,38 @@ class TranslateArr(Translate):
             print "----->Error,key=", cell_value_key, ",value=", cell_value_content
         return value
 
-    def __get_str_by_key_value(self, cell_value_key, cell_value_content, ):
-        value = "<string-array name= \"" + cell_value_key;
-        value = value + "\">\n<item>"
+    def __get_str_by_key_value(self, cell_value_key, cell_value_content):
+        """返回根据key以及content，返回Android格式的内容,
+        如\n'content'-->'<string-array name="key"><item>content</item></string-array>'
+
+        :param cell_value_key: 翻译key内容
+        :param cell_value_content: 翻译content内容
+        :return: Android格式的内容
+        """
+        value = "\t<string-array name= \"" + cell_value_key;
+        value = value + "\">\n\t\t<item>"
         value = value + cell_value_content
-        value = value + "</item>\n</string-array>"
+        value = value + "</item>\n\t</string-array>"
         return value
 
     def __get_item_str(self, cell_value_content):
-        value = "<item>";
+        """返回根据content，返回Android格式的内容,
+        如'content'-->'<item>content</item>'
+
+        :param cell_value_content: 翻译content内容
+        :return: Android格式的内容
+        """
+        value = "\t\t<item>";
         value = value + cell_value_content
         value = value + "</item>"
         return value
 
     def __get_head_key_array(self, str):
+        """返回array_array的真实key,如'ya_key_a1_start'-->'key'
+
+        :param str: excel中的key
+        :return: 真实的key
+        """
         split_str = str.split("_")
         arr_length = len(split_str)
         array_head = ""
@@ -383,6 +542,11 @@ class TranslateArr(Translate):
         return array_head
 
     def __get_head_key_item(self, str):
+        """返回array_item的真实key,如'ya_key'-->'key'
+
+        :param str: excel中的key
+        :return: 真实的key
+        """
         split_str = str.split("_")
         arr_length = len(split_str)
         array_head = ""
@@ -394,18 +558,44 @@ class TranslateArr(Translate):
         return array_head
 
     def __is_array(self, str):
+        """字符串是否含有'a'+数字的组合字样,如"a3"返回True
+
+            :param str: 目标字符串
+            :return: 'True'表示存在，'False'表示不存在
+            """
         return self.__is_array_match(r'[a]\d+', str)
 
-    def __is_start(self, str):
+    def __is_exits_start(self, str):
+        """字符串是否含有'start'字样，如"a_start"返回True
+
+            :param str: 目标字符串
+            :return: 'True'表示存在，'False'表示不存在
+            """
         return self.__is_array_match(r'start', str)
 
-    def __is_middle(self, str):
+    def __is_exits_middle(self, str):
+        """字符串是否含有'middle'字样,如"a_middle"返回True
+
+            :param str: 目标字符串
+            :return: 'True'表示存在，'False'表示不存在
+            """
         return self.__is_array_match(r'middle', str)
 
-    def __is_stop(self, str):
+    def __is_exits_stop(self, str):
+        """字符串是否含有'stop'字样,如"a_stop"返回True
+
+        :param str: 目标字符串
+        :return: 'True'表示存在，'False'表示不存在
+        """
         return self.__is_array_match(r'stop', str)
 
     def __is_array_match(self, format_str, str):
+        """规则字符串的匹配
+
+        :param format_str: 匹配标准
+        :param str: 目标字符串
+        :return: 'True'表示匹配成功，'False'表示匹配失败
+        """
         split_str = str.split("_")
         flag = False
         for item_str in split_str:
@@ -416,40 +606,51 @@ class TranslateArr(Translate):
         return flag
 
     def _set_filexmlname(self):
+        """设置xml保存时的文件名
+
+        :return: xml文件名
+        """
         return self.xml_name_array
 
 
-def select_translate(array2):
+def __select_translate(selet, array2):
+    """根据对应的选择，执行相应的翻译步骤
 
+     :param selet: 用户的选择.
+     :param array2: 读取excel后转换的二维数组
+     :return string: 选择的描述.
+    """
     select_str = ""
     if selet == '1' or selet == '3':
         select_str = "translate  string"
-        translate_str = TranslateStr()
-        translate_str.do_translate(array2)
+        translate_str_obj = TranslateStr()
+        translate_str_obj.do_translate(array2)
     if selet == '2' or selet == '3':
         select_str = "translate  array"
-        translate_arr = TranslateArr()
-        translate_arr.do_translate(array2)
+        translate_arr_obj = TranslateArr()
+        translate_arr_obj.do_translate(array2)
     if selet == '3':
         select_str = "translate string && array"
     if selet == '4':
         select_str = "translate  ios"
-        translate_arr = TranslateIOS()
-        translate_arr.do_translate(array2)
-    return  select_str
+        translate_ios_obj = TranslateIOS()
+        translate_ios_obj.do_translate(array2)
+    return select_str
 
 
 if '__main__' == __name__:
+    """将一定规则的翻译好的execl，转换成Android/IOS需要的翻译文件"""
+
     selet = '1'
     selet = sys.argv[1]
-    translate = Translate()
+    translateObj = Translate()
 
-    start_time = translate.get_datetime()
+    start_time = translateObj.get_datetime()
 
-    array2 = translate.execl_to_2array()
-    select_str=select_translate(array2)
+    array2 = translateObj.execl_to_2array()
+    select_str = __select_translate(selet, array2)
 
-    end_time = translate.get_datetime()
+    end_time = translateObj.get_datetime()
     print ""
     print select_str
     print "translate  start time:", start_time
