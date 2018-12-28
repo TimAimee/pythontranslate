@@ -3,15 +3,17 @@ import time
 import os
 import re
 import sys
+import cProfile
 import openpyxl
 from openpyxl import Workbook
 from openpyxl import load_workbook
 
+path_excel = 'E:\\Public_resorces\\HBand_translations\\trunk\\HBandTranslate_copy.xlsx'
+url_dir_appres = 'E:\\ExportProject\\Util_Effective\\TranslateByPython'
+url_dir_appres_main = 'res'
+
 
 class Translate(object):
-    path_excel = 'E:\\Public_resorces\\HBand_translations\\trunk\\HBandTranslate.xlsx'
-    url_dir_appres = 'E:\\ExportProject\\TranslateByPython'
-    url_dir_appres_main = 'res'
     ZH = '中文'
     ZH_M = "中文繁体"
     ZH_HK = "中文繁体_hk"
@@ -27,6 +29,7 @@ class Translate(object):
     FR = "法语"
     VI = "越南语"
     PT = "葡萄牙语"
+    FA = "波斯语"
 
     def get_datetime(self):
         """获得当前格式化的时间戳
@@ -111,15 +114,17 @@ class Translate(object):
 
         :return: 二维数组
         """
-        worksheet = self.__open_execl_file(self.path_excel)
+        worksheet = self.__open_execl_file(path_excel)
         if worksheet == None:
             print "worksheet出现错误"
             return None
         ##语言列
         max_column_ = worksheet.max_column
+        # max_column_ = 15
+        print "max_column_:", max_column_
         ## key行
         max_row_ = worksheet.max_row
-        # print max_column_, max_row_
+        print "max_row_:", max_row_
         arrListOut = []
         for row in worksheet.rows:
             arrListInner = []
@@ -127,7 +132,7 @@ class Translate(object):
                 value = cell.value
                 if value != None:
                     _column = cell.column
-                    # print "nomal=", cell.value
+                    # print "nomal=", cell.value,_column
                     arrListInner.append(value.encode("utf-8"))
                     if _column == max_column_:
                         arrListOut.append(arrListInner)
@@ -184,13 +189,15 @@ class Translate(object):
             return "values-vi-rVN"
         elif language == self.PT:
             return "values-pt"
+        elif language == self.FA:
+            return "values-fa"
         else:
             return "values"
 
     def __save_xml_by_language(self, filename, result, language_title_str):
         """根据国家语言来选择保存的不同情况，其中英语以及繁体要保存两次
 
-        :param filename: 文件名,如"string.xml"
+        :param filename: 文件名,如"strings.xml"
         :param result: 列表类型，翻译的结果
         :param language_title_str: 国家语言
         """
@@ -206,7 +213,7 @@ class Translate(object):
     def __save_to_file(self, filename, result, language_title_str):
         """保存内容到文件
 
-        :param filename: 文件名,如"string.xml"
+        :param filename: 文件名,如"strings.xml"
         :param result: 列表类型，翻译的结果
         :param language_title_str: 国家语言
         """
@@ -214,14 +221,14 @@ class Translate(object):
         # print "保存到文件"
         """
          保存到文件
-         :param result: string xml的数组\n
+         :param result: string xml的数组
          """
         # 如果不存在文件夹
-        if not os.path.exists(self.url_dir_appres):
-            os.mkdir(self.url_dir_appres)
+        if not os.path.exists(url_dir_appres):
+            os.mkdir(url_dir_appres)
 
         # 如果不存在文件夹
-        dir_main = os.path.join(self.url_dir_appres, self.url_dir_appres_main)
+        dir_main = os.path.join(url_dir_appres, url_dir_appres_main)
         if not os.path.exists(dir_main):
             os.mkdir(dir_main)
 
@@ -245,11 +252,14 @@ class Translate(object):
                 print  "写入出错=", item_str,
         fileObject.close()
 
+
 """
 用于翻译普通string的类
 """
+
+
 class TranslateStr(Translate):
-    __xml_name_str = 'string.xml'
+    __xml_name_str = 'strings.xml'
 
     def _get_translate_str(self, array):
         """根据二维数组得到翻译的结果
@@ -271,7 +281,7 @@ class TranslateStr(Translate):
                 cell_value_key = array[index_key][1]
                 cell_value_content = array[index_key][index_language]
                 if index_key == 1:
-                    result_arr.append("<?xml version=\"1.0\" encoding=\"uft-8\"?>\n" + "<resources>")
+                    result_arr.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + "<resources>")
                 # print   "key=", cell_value_key, ",value=", cell_value_content
                 result = self.__get_result(cell_value_content, cell_value_key, language_title_str)
                 if result != None:
@@ -333,6 +343,7 @@ class TranslateStr(Translate):
 """
 用于翻译ios的类
 """
+
 
 class TranslateIOS(Translate):
     __xml_name_str = 'string_ios.xml'
@@ -435,7 +446,7 @@ class TranslateArr(Translate):
                 cell_value_key = array[index_key][1]
                 cell_value_content = array[index_key][index_language]
                 if index_key == 1:
-                    result_arr.append("<?xml version=\"1.0\" encoding=\"uft-8\"?>\n" + "<resources>")
+                    result_arr.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + "<resources>")
                 # print   "key=", cell_value_key, ",value=", cell_value_content
                 result = self.__get_result(cell_value_content, cell_value_key, language_title_str)
                 if result != None:
@@ -478,7 +489,12 @@ class TranslateArr(Translate):
         cell_value_key_really = self.__get_head_key_array(cell_value_key)
         item_str = self.__get_item_str(cell_value_content)
         if self.__is_exits_start(cell_value_key):
-            value = "\t<string-array name= \"" + cell_value_key_really + "\">\n" + item_str
+            value = "\t<string-array name= \"" + cell_value_key_really
+            if cell_value_key_really == "glossary_osahs_item_3":
+                value = value + "\" formatted=\"false\">\n"
+            else:
+                value = value + "\">\n"
+            value = value + item_str
         elif self.__is_exits_middle(cell_value_key):
             value = item_str
         elif self.__is_exits_stop(cell_value_key):
@@ -625,13 +641,13 @@ def __select_translate(selet, array2):
         select_str = "translate  string"
         translate_str_obj = TranslateStr()
         translate_str_obj.do_translate(array2)
-    if selet == '2' or selet == '3':
+    elif selet == '2' or selet == '3':
         select_str = "translate  array"
         translate_arr_obj = TranslateArr()
         translate_arr_obj.do_translate(array2)
-    if selet == '3':
+    elif selet == '3':
         select_str = "translate string && array"
-    if selet == '4':
+    elif selet == '4':
         select_str = "translate  ios"
         translate_ios_obj = TranslateIOS()
         translate_ios_obj.do_translate(array2)
@@ -641,15 +657,14 @@ def __select_translate(selet, array2):
 if '__main__' == __name__:
     """将一定规则的翻译好的execl，转换成Android/IOS需要的翻译文件"""
 
-    selet = '1'
     selet = sys.argv[1]
+    # selet = '3'
     translateObj = Translate()
-
     start_time = translateObj.get_datetime()
+    print "translate  start time:", start_time
 
     array2 = translateObj.execl_to_2array()
     select_str = __select_translate(selet, array2)
-
     end_time = translateObj.get_datetime()
     print ""
     print select_str
